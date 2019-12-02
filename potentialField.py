@@ -15,6 +15,10 @@ IN_DIRECTION = 0
 TO_TARGET = 1
 REPULSE = 2
 ATTRACT = 3
+CENTER_VERTICAL = 4
+CENTER_HORIZONTAL = 5
+
+LINE_WIDTH = 3
 
 
 """
@@ -57,13 +61,13 @@ def drawArrow(surface, startCoord, endCoord):
     )
 
     pygame.draw.line(
-        surface, (255, 255, 255), A, B
+        surface, (255, 255, 255), A, B, LINE_WIDTH
     )
     pygame.draw.line(
-        surface, (255, 255, 255), B, C
+        surface, (255, 255, 255), B, C, LINE_WIDTH
     )
     pygame.draw.line(
-        surface, (255, 255, 255), B, D
+        surface, (255, 255, 255), B, D, LINE_WIDTH
     )
 
 
@@ -149,6 +153,10 @@ class PotentialField:
             self.field += self.repulseSchema(kwargs)
         if type == ATTRACT:
             self.field += self.attractSchema(kwargs)
+        if type == CENTER_VERTICAL:
+            self.field += self.centerVerticalSchema(kwargs)
+        if type == CENTER_HORIZONTAL:
+            self.field += self.centerHorizontalSchema(kwargs)
     
     def inDirectionSchema(self, kwargs):
         """
@@ -312,6 +320,43 @@ class PotentialField:
         field[:, :, 1] = normalField[:, :, 1] * magnitudeField
         return field 
 
+    def centerVerticalSchema(self, kwargs):
+        """
+            Add schema that pushes the potential field towards the
+            center of the screen, vertically.
+
+            kwargs should contain:
+                borderRadius (float)
+                maxVel (float)
+        """
+        # Create field
+        field = np.zeros(
+            (self.fieldSize[0], self.fieldSize[1], 2)
+        )
+        # Set center-pushing values
+        field[:, :kwargs['borderRadius'], 1] = kwargs['maxVel']
+        field[:, -kwargs['borderRadius']:, 1] = -kwargs['maxVel']
+        return field
+
+    def centerHorizontalSchema(self, kwargs):
+        """
+            Add schema that pushes the potential field towards the
+            center of the screen, horizontally.
+
+            kwargs should contain:
+                borderRadius (float)
+                maxVel (float)
+        """
+        # Create field
+        field = np.zeros(
+            (self.fieldSize[0], self.fieldSize[1], 2)
+        )
+        # Set center-pushing values
+        field[:kwargs['borderRadius'], :, 0] = kwargs['maxVel']
+        field[-kwargs['borderRadius']:, :, 0] = -kwargs['maxVel']
+        return field
+
+
 
 """
     Testing
@@ -336,7 +381,21 @@ if __name__ == '__main__':
         attractPos=(FIELD_SIZE[0]*3.0/5.0, FIELD_SIZE[1]/2-150), 
         minVel=0, maxVel=20, radius=500
     )
-    
+
+    pf.addSchema(
+        CENTER_VERTICAL,
+        borderRadius=300, maxVel=10.0
+    )
+
+    pf.addSchema(
+        IN_DIRECTION,
+        magnitude=4.0, angle=0.0
+    )
+
+    pf.addSchema(
+        CENTER_HORIZONTAL,
+        borderRadius=300, maxVel=10.0
+    )
 
     pf.clampField(15.0)
     
