@@ -17,6 +17,7 @@ REPULSE = 2
 ATTRACT = 3
 CENTER_VERTICAL = 4
 CENTER_HORIZONTAL = 5
+RANDOM_NOISE = 6
 
 LINE_WIDTH = 3
 
@@ -157,6 +158,8 @@ class PotentialField:
             self.field += self.centerVerticalSchema(kwargs)
         if type == CENTER_HORIZONTAL:
             self.field += self.centerHorizontalSchema(kwargs)
+        if type == RANDOM_NOISE:
+            self.field += self.randomNoiseSchema(kwargs)
     
     def inDirectionSchema(self, kwargs):
         """
@@ -356,6 +359,42 @@ class PotentialField:
         field[-kwargs['borderRadius']:, :, 0] = -kwargs['maxVel']
         return field
 
+    def randomNoiseSchema(self, kwargs):
+        """
+            Add schema that introduces random noise into the field
+            with the hopes of preventing a robot from getting stuck.
+
+            kwargs should contain:
+                maxVel (float)
+        """
+        # Create random field
+        field = np.random.rand(
+            self.fieldSize[0], self.fieldSize[1], 2
+        )
+        field[:, :, 0] = cvtRange(
+            field[:, :, 0], 0.0, 1.0, -1.0, 1.0
+        )
+        field[:, :, 1] = cvtRange(
+            field[:, :, 1], 0.0, 1.0, -1.0, 1.0
+        )
+        # Get magnitude field
+        magnitudeField = np.sqrt(
+            field[:, :, 0] ** 2 + field[:, :, 1] ** 2
+        )
+        magnitudeField = np.clip(
+            magnitudeField, 0.0000001, math.inf
+        )
+        # Create normal field
+        normalField = np.zeros(
+            (self.fieldSize[0], self.fieldSize[1], 2)
+        )
+        normalField[:, :, 0] = field[:, :, 0] / magnitudeField
+        normalField[:, :, 1] = field[:, :, 1] / magnitudeField
+        # Re-scale the normal field
+        field[:, :, 0] = normalField[:, :, 0] * kwargs['maxVel']
+        field[:, :, 1] = normalField[:, :, 1] * kwargs['maxVel']
+        return field
+
 
 
 """
@@ -371,30 +410,36 @@ if __name__ == '__main__':
     pf = PotentialField(FIELD_SIZE)
 
     pf.addSchema(
-        REPULSE,
-        repulsePos=(FIELD_SIZE[0]*2.0/5.0, FIELD_SIZE[1]/2+150), 
-        minVel=0, maxVel=40, radius=300
+        CENTER_VERTICAL,
+        borderRadius=200, maxVel=1000.0
     )
     
     pf.addSchema(
-        ATTRACT,
-        attractPos=(FIELD_SIZE[0]*3.0/5.0, FIELD_SIZE[1]/2-150), 
-        minVel=0, maxVel=20, radius=500
+        REPULSE,
+        repulsePos=(FIELD_SIZE[0] * 1.0/5.0, 350),
+        minVel=0, maxVel=40, radius=250
     )
 
     pf.addSchema(
-        CENTER_VERTICAL,
-        borderRadius=300, maxVel=10.0
+        REPULSE,
+        repulsePos=(FIELD_SIZE[0] * 2.0/5.0, 650),
+        minVel=0, maxVel=40, radius=250
+    )
+
+    pf.addSchema(
+        REPULSE,
+        repulsePos=(FIELD_SIZE[0] * 3.0/5.0, 500),
+        minVel=0, maxVel=40, radius=250
     )
 
     pf.addSchema(
         IN_DIRECTION,
-        magnitude=4.0, angle=0.0
+        magnitude=20.0, angle=0.0
     )
 
     pf.addSchema(
-        CENTER_HORIZONTAL,
-        borderRadius=300, maxVel=10.0
+        RANDOM_NOISE,
+        maxVel=3.0
     )
 
     pf.clampField(15.0)
