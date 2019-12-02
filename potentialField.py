@@ -30,6 +30,42 @@ def cvtRange(x, in_min, in_max, out_min, out_max):
     """
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
+def drawArrow(surface, startCoord, endCoord):
+    """
+        Draw an arrow via pygame.
+    """
+    A = startCoord
+    B = endCoord
+    dir_ = (B[0] - A[0], B[1] - A[1])
+    dir_mag = math.sqrt(dir_[0]**2 + dir_[1]**2)
+    H = dir_mag / 4.0
+    W = H * 2.0
+    if dir_mag == 0:
+        dir_mag = 0.00001
+    dir_ = (dir_[0] / dir_mag, dir_[1] / dir_mag)
+
+    q = (dir_[1], -dir_[0])
+
+    C = (
+        B[0] - (H * dir_[0]) + (W * q[0]/2.0),
+        B[1] - (H * dir_[1]) + (W * q[1]/2.0)
+    )
+
+    D = (
+        B[0] - (H * dir_[0]) - (W * q[0]/2.0),
+        B[1] - (H * dir_[1]) - (W * q[1]/2.0)
+    )
+
+    pygame.draw.line(
+        surface, (255, 255, 255), A, B
+    )
+    pygame.draw.line(
+        surface, (255, 255, 255), B, C
+    )
+    pygame.draw.line(
+        surface, (255, 255, 255), B, D
+    )
+
 
 
 """
@@ -74,10 +110,10 @@ class PotentialField:
                 endPixelX = math.floor(startPixelX + fieldVector[0])
                 endPixelY = math.floor(startPixelY + fieldVector[1])
                 # Draw the vector to the pygame surface
-                
-                pygame.draw.line(
-                    surface, (255, 255, 255),
-                    (startPixelX, startPixelY), (endPixelX, endPixelY)
+                drawArrow(
+                    surface, 
+                    (startPixelX, startPixelY),
+                    (endPixelX, endPixelY)
                 )
     
     def clampField(self, maxVel):
@@ -87,6 +123,9 @@ class PotentialField:
         """
         magnitudeField = np.sqrt(
             self.field[:, :, 0] ** 2 + self.field[:, :, 1] ** 2
+        )
+        magnitudeField = np.clip(
+            magnitudeField, 0.000001, math.inf
         )
         normalField = np.zeros(
             (self.fieldSize[0], self.fieldSize[1], 2)
@@ -281,29 +320,25 @@ class PotentialField:
 if __name__ == '__main__':
     from display import Display
 
-    FIELD_SIZE = (1500, 900)
+    FIELD_SIZE = (1600, 1000)
 
     display = Display(FIELD_SIZE, windowTitle='Potential Field')
     pf = PotentialField(FIELD_SIZE)
 
     pf.addSchema(
         REPULSE,
-        repulsePos=(FIELD_SIZE[0]/2, FIELD_SIZE[1]/2), 
-        minVel=0, maxVel=10, radius=300
+        repulsePos=(FIELD_SIZE[0]*2.0/5.0, FIELD_SIZE[1]/2+150), 
+        minVel=0, maxVel=40, radius=300
     )
     
     pf.addSchema(
         ATTRACT,
-        attractPos=(FIELD_SIZE[0]*3.0/4.0, FIELD_SIZE[1]/2), 
-        minVel=0, maxVel=10, radius=300
+        attractPos=(FIELD_SIZE[0]*3.0/5.0, FIELD_SIZE[1]/2-150), 
+        minVel=0, maxVel=20, radius=500
     )
     
-    pf.addSchema(
-        IN_DIRECTION,
-        magnitude=10.0, angle=0.0
-    )
 
-    pf.clampField(10.0)
+    pf.clampField(15.0)
     
     while True:
         event = pygame.event.poll()
