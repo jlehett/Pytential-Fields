@@ -1,5 +1,7 @@
 # Pytential-Fields
 
+#### Note: A web application version of this program is available at www.lehett.net/PotentialFieldVisualizer.
+
 <p>Potential field simulations are one method for solving robotic pathfinding problems. In this simulation, the cell in which the robot resides in the potential field represents the velocity with which the robot would move on its next time step.</p>
 <p>Potential fields can be easily implemented via NumPy arrays. The starting potential field with no schemas applied to it is simply a zero-state, where all of the cells contain the velocity vector [0, 0]. However, by adding new schemas, such as repulsion, attraction, or target direction, you can begin to create a field that represents where a robot should go. In each of these schemas, a potential field that solves that problem alone is constructed. Then, this field is added to the current field that the robot is using. By layering potential fields in this way, you can create a potential field that solves the pathfinding problem given.</p>
 <p>In this Python project, I wanted to explore how potential fields change as you add different schemas. The display is handled via PyGame, and is capable of displaying a potential field as a grid of arrows pointing in the direction of the velocity, with their size representing the magnitude of the vector.</p>
